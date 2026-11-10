@@ -30,10 +30,9 @@ public class TicketController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TicketResponseDTO> getTicketById(@PathVariable long id) {
-        return service.getTicketById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<TicketResponseDTO> getTicketById(@PathVariable Long id) {
+        TicketResponseDTO ticket = service.getTicketById(id);
+        return ResponseEntity.ok(ticket);
     }
 
     @PostMapping
@@ -50,12 +49,8 @@ public class TicketController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTicket(@PathVariable long id) {
-        if (service.getTicketById(id).isPresent()) {
-            service.deleteTicket(id);
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
-
+    public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
+        service.deleteTicket(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @Getter
@@ -14,8 +15,9 @@ public class TicketResponseDTO {
     private String title;
     private String description;
     private String location;
-    private Long requesterId;
-    private Long assignedId;
+    private UserResponseDTO requesterId;
+    private UserResponseDTO assignedId;
+    private List<CommentResponseDTO> comments;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

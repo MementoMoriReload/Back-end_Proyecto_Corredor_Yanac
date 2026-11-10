@@ -10,4 +10,5 @@ public class TicketRequestDTO {
     private String description;
     private String location;
     private Long requesterId;
+    private Long assignedId;
 }
