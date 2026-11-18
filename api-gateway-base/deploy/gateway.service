@@ -1,0 +1,13 @@
+[Unit]
+Description=API Gateway
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/api-gateway-base
+EnvironmentFile=-/etc/gateway.env
+ExecStart=/usr/bin/java -Xmx256m -jar target/gateway.jar
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

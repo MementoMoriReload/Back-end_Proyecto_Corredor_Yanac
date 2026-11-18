@@ -1,0 +1,4 @@
+# Evita que Windows convierta mvnw a CRLF (rompe el script en Linux/Docker)
+* text=auto
+mvnw text eol=lf
+*.sh text eol=lf
