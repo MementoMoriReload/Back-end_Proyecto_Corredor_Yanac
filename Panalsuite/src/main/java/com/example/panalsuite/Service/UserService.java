@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 @Service
 public class UserService {
@@ -18,6 +19,9 @@ public class UserService {
     public UserService(UserRepository repository) {
         this.repository = repository;
     }
+
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[\\p{L}]+(?:[ '-][\\p{L}]+)*$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@panal\\.cl$");
 
     public List<UserResponseDTO> getAllUsers() {
         return repository.findAll().stream()
@@ -32,17 +36,27 @@ public class UserService {
     }
 
     public UserResponseDTO saveUser(UserRequestDTO dto) {
-        if (repository.findByEmail(dto.getEmail()).isPresent()) {
+        String name = dto.getName() == null ? null : dto.getName().trim();
+        String email = dto.getEmail();
+        if (email == null || !EMAIL_PATTERN.matcher(email).matches()) {
+            throw new RuntimeException("El correo electrónico debe pertenecer al dominio @panal.cl");
+        }
+
+        if (repository.findByEmail(email).isPresent()) {
             throw new RuntimeException("El correo electrónico ya está registrado");
         }
-            User user = new User();
-            user.setName(dto.getName());
-            user.setEmail(dto.getEmail());
-            user.setDepartment(dto.getDepartment());
-            user.setRole(dto.getRole());
 
-            User savedUser = repository.save(user);
-            return mapToResponseDTO(savedUser);
+        if (name == null || !NAME_PATTERN.matcher(name).matches()) {
+            throw new RuntimeException("El nombre solo puede contener letras");
+        }
+        User user = new User();
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        user.setDepartment(dto.getDepartment());
+        user.setRole(dto.getRole());
+
+        User savedUser = repository.save(user);
+        return mapToResponseDTO(savedUser);
     }
 
     public void deleteUser(Long id) {
@@ -57,8 +71,7 @@ public class UserService {
                 user.getUserId(),
                 user.getName(),
                 user.getEmail(),
-                user.getRole()
-        );
+                user.getRole());
     }
 
 }
