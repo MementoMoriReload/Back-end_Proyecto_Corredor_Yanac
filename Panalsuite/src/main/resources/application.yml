@@ -1,0 +1,14 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: panalsuite
+  datasource:
+    url: jdbc:mysql://localhost:3306/panalsuite_db?createDatabaseIfNotExist=true
+    username: root
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

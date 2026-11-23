@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,10 +17,19 @@ public class TicketComment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long commentId;
+
     private String author;
+
     private String text;
-    private LocalTime timestamp;
-    @ManyToOne
+
+    private LocalDateTime timestamp;
+
+    @ManyToOne(optional = false)
     @JoinColumn(name = "ticket_id")
     private Ticket ticket;
+
+    @PrePersist
+    void onCreate(){
+        if (timestamp == null) timestamp = LocalDateTime.now();
+    }
 }

@@ -12,5 +12,6 @@ public class UserResponseDTO {
     private Long userId;
     private String name;
     private String email;
+    private String department;
     private UserRole role;
 }
