@@ -4,26 +4,27 @@ import com.example.panalsuite.DTO.CommentRequestDTO;
 import com.example.panalsuite.DTO.CommentResponseDTO;
 import com.example.panalsuite.DTO.TicketRequestDTO;
 import com.example.panalsuite.DTO.TicketResponseDTO;
-import com.example.panalsuite.DTO.UserResponseDTO;
-import com.example.panalsuite.model.Ticket;
-import com.example.panalsuite.model.TicketComment;
-import com.example.panalsuite.model.User;
+import com.example.panalsuite.Exception.ApiException;
+import com.example.panalsuite.model.*;
+import com.example.panalsuite.repository.CommentRepository;
 import com.example.panalsuite.repository.TicketRepository;
 import com.example.panalsuite.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class TicketService {
     private final TicketRepository repository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
-    public TicketService(TicketRepository repository, UserRepository userRepository) {
+    public TicketService(TicketRepository repository, UserRepository userRepository, CommentRepository commentRepository) {
         this.repository = repository;
         this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
     }
 
     public List<TicketResponseDTO> getAllTickets() {
@@ -32,93 +33,108 @@ public class TicketService {
                 .collect(Collectors.toList());
     }
 
-    public TicketResponseDTO getTicketById(Long id) {
-        Ticket ticket = repository.findById(id)
+    private Ticket findTicket(long id){
+        return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException(String.format("Ticket %d no encontrado", +id)));
-        return mapToResponseDTO(ticket);
+    }
+
+    private User findUser(long id, String label){
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException(String.format(label + "%d no encontrado", +id)));
+
+    }
+
+    public TicketResponseDTO getTicketById(Long id) {
+        return mapToResponseDTO(findTicket(id));
     }
 
     public TicketResponseDTO saveTicket(TicketRequestDTO dto) {
-        User requester = userRepository.findById(dto.getRequesterId())
-                .orElseThrow(()-> new RuntimeException(String.format("Solicitante %d no encontrado",+ dto.getRequesterId())));
+        User requester = findUser(dto.getRequesterId(), "Solicitante");
 
-        User assigned = null;
-        if (dto.getAssignedId() != null) {
-            assigned = userRepository.findById(dto.getAssignedId())
-                    .orElseThrow(() -> new RuntimeException(String.format("Técnico asignado %d no encontrado",+ dto.getAssignedId())));
-        }
+        User assigned = dto.getAssignedId() != null ?
+                findUser(dto.getAssignedId(), "Resolutor") : null;
 
         Ticket ticket = new Ticket();
-        ticket.setTitle(dto.getTitle());
-        ticket.setDescription(dto.getDescription());
-        ticket.setLocation(dto.getLocation());
+        ticket.setTitle(dto.getTitle().trim());
+        ticket.setDescription(dto.getDescription().trim());
+        ticket.setLocation(dto.getLocation().trim());
+        ticket.setCategory(dto.getCategory());
+        ticket.setPriority(dto.getPriority() != null ? dto.getPriority() : TicketPriority.MEDIUM);
+        ticket.setStatus(TicketStatus.OPEN);
         ticket.setRequester(requester);
         ticket.setAssigned(assigned);
 
-        Ticket savedTicket = repository.save(ticket);
-        return mapToResponseDTO(savedTicket);
+        return mapToResponseDTO(repository.save(ticket));
     }
 
     public TicketResponseDTO addComment(long ticketId, CommentRequestDTO dto) {
-        Ticket ticket = repository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException(String.format("Ticket %d no encontrado", ticketId)));
+        Ticket ticket = findTicket(ticketId);
+        if(ticket.getStatus() == TicketStatus.CLOSED){
+            throw ApiException.badRequest("No se puede comentar un ticket cerrado");
+        }
 
         TicketComment comment = new TicketComment();
-        comment.setAuthor(dto.getAuthor());
-        comment.setText(dto.getText());
+        comment.setAuthor(dto.getAuthor().trim());
+        comment.setText(dto.getText().trim());
         comment.setTicket(ticket);
+        commentRepository.save(comment);
 
         ticket.getComments().add(comment);
+        ticket.setUpdatedAt(LocalDateTime.now());
+        return mapToResponseDTO(repository.save(ticket));
+    }
 
-        Ticket saved = repository.save(ticket);
+    public TicketResponseDTO updateStatus(long id, TicketStatus status){
+        Ticket ticket = findTicket(id);
+        ticket.setStatus(status);
+        ticket.setUpdatedAt(LocalDateTime.now());
+        return mapToResponseDTO(repository.save(ticket));
+    }
 
-        return mapToResponseDTO(saved);
+    public TicketResponseDTO assign(long id, Long resolverId){
+        Ticket ticket = findTicket(id);
+        if (resolverId == null){
+            ticket.setAssigned(null);
+        } else {
+            User resolver = findUser(resolverId, "Resolutor");
+            if (resolver.getRole()!=UserRole.RESOLVER){
+                throw ApiException.badRequest("El usuario seleccionado no es un resolutor");
+            }
+            ticket.setAssigned(resolver);
+        }
+        ticket.setUpdatedAt(LocalDateTime.now());
+        return mapToResponseDTO(repository.save(ticket));
     }
 
     public void deleteTicket(Long id) {
         if (!repository.existsById(id)) {
-            throw new RuntimeException("Ticket no encontrado con ID: " + id);
+            throw new RuntimeException(String.format("Ticket %d no encontrado", +id));
         }
         repository.deleteById(id);
     }
 
-    private TicketResponseDTO mapToResponseDTO(Ticket ticket) {
-        UserResponseDTO requesterDTO = new UserResponseDTO(
-                ticket.getRequester().getUserId(),
-                ticket.getRequester().getName(),
-                ticket.getRequester().getEmail(),
-                ticket.getRequester().getRole()
-        );
-
-        UserResponseDTO assignedDTO = null;
-        if (ticket.getAssigned() != null) {
-            assignedDTO = new UserResponseDTO(
-                    ticket.getAssigned().getUserId(),
-                    ticket.getAssigned().getName(),
-                    ticket.getAssigned().getEmail(),
-                    ticket.getAssigned().getRole()
-            );
-        }
-
-        List<CommentResponseDTO> commentDTOs = ticket.getComments().stream()
-                .map(comment -> new CommentResponseDTO(
-                        comment.getCommentId(),
-                        comment.getAuthor(),
-                        comment.getText(),
-                        comment.getTimestamp()
-                ))
-                .collect(Collectors.toList());
+    private TicketResponseDTO mapToResponseDTO(Ticket t) {
+        List<CommentResponseDTO> comments = t.getComments().stream()
+                .map(c -> new CommentResponseDTO(
+                        c.getCommentId(),
+                        c.getAuthor(),
+                        c.getText(),
+                        c.getTimestamp()))
+                .toList();
 
         return new TicketResponseDTO(
-                ticket.getTicketId(),
-                ticket.getTitle(),
-                ticket.getDescription(),
-                ticket.getLocation(),
-                requesterDTO,
-                assignedDTO,
-                commentDTOs,
-                ticket.getCreatedAt(),
-                ticket.getUpdatedAt()
+                t.getTicketId(),
+                t.getTitle(),
+                t.getDescription(),
+                t.getCategory(),
+                t.getPriority(),
+                t.getStatus(),
+                t.getLocation(),
+                t.getRequester().getUserId(),
+                t.getAssigned() != null ? t.getAssigned().getUserId() : null,
+                comments,
+                t.getCreatedAt(),
+                t.getUpdatedAt()
         );
 
     }

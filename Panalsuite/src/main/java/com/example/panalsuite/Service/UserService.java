@@ -1,23 +1,28 @@
 package com.example.panalsuite.Service;
 
-import com.example.panalsuite.DTO.TicketResponseDTO;
+import com.example.panalsuite.DTO.LoginRequestDTO;
 import com.example.panalsuite.DTO.UserRequestDTO;
 import com.example.panalsuite.DTO.UserResponseDTO;
+import com.example.panalsuite.Exception.ApiException;
 import com.example.panalsuite.model.User;
+import com.example.panalsuite.model.UserRole;
 import com.example.panalsuite.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.regex.Pattern;
 
 @Service
 public class UserService {
     private final UserRepository repository;
+    private final PasswordEncoder encoder;
 
-    public UserService(UserRepository repository) {
+    public UserService(UserRepository repository, PasswordEncoder encoder) {
+
         this.repository = repository;
+        this.encoder = encoder;
     }
 
     private static final Pattern NAME_PATTERN = Pattern.compile("^[\\p{L}]+(?:[ '-][\\p{L}]+)*$");
@@ -29,10 +34,13 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public UserResponseDTO getUserById(long id) {
-        User user = repository.findById(id)
+    public User find(Long id){
+        return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException(String.format("Usuario %d no encontrado", +id)));
-        return mapToResponseDTO(user);
+    }
+
+    public UserResponseDTO getUserById(long id) {
+        return mapToResponseDTO(find(id));
     }
 
     public UserResponseDTO saveUser(UserRequestDTO dto) {
@@ -52,11 +60,27 @@ public class UserService {
         User user = new User();
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
+        user.setPassword(encoder.encode(dto.getPassword()));
         user.setDepartment(dto.getDepartment());
-        user.setRole(dto.getRole());
+        user.setRole(dto.getRole()
+                != null ? dto.getRole(): UserRole.REQUESTER);
 
-        User savedUser = repository.save(user);
-        return mapToResponseDTO(savedUser);
+        return mapToResponseDTO(repository.save(user));
+    }
+
+    public UserResponseDTO login(LoginRequestDTO dto){
+        User user = repository.findByEmail(dto.getEmail().trim())
+                .orElseThrow(() -> ApiException.unauthorized("Correo o contraseña incorrectas"));
+        if (!encoder.matches(dto.getPassword(), user.getPassword())){
+            throw ApiException.unauthorized("Correo o contraseña incorrectas");
+        }
+        return mapToResponseDTO(user);
+    }
+
+    public UserResponseDTO updateRole(Long id, UserRole role){
+        User user = find(id);
+        user.setRole(role);
+        return mapToResponseDTO(repository.save(user));
     }
 
     public void deleteUser(Long id) {
@@ -66,12 +90,13 @@ public class UserService {
         repository.deleteById(id);
     }
 
-    private UserResponseDTO mapToResponseDTO(User user) {
+    private UserResponseDTO mapToResponseDTO(User u) {
         return new UserResponseDTO(
-                user.getUserId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole());
+                u.getUserId(),
+                u.getName(),
+                u.getEmail(),
+                u.getDepartment(),
+                u.getRole());
     }
 
 }

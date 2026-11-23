@@ -1,5 +1,7 @@
 package com.example.panalsuite.controller;
 
+import com.example.panalsuite.DTO.LoginRequestDTO;
+import com.example.panalsuite.DTO.RoleUpdateDTO;
 import com.example.panalsuite.DTO.UserRequestDTO;
 import com.example.panalsuite.DTO.UserResponseDTO;
 import com.example.panalsuite.Service.UserService;
@@ -21,6 +23,7 @@ public class UserController {
 
     @GetMapping
     public List<UserResponseDTO> getAllUsers() {
+
         return service.getAllUsers();
     }
 
@@ -34,6 +37,11 @@ public class UserController {
     public ResponseEntity<UserResponseDTO> saveUser(@Valid @RequestBody UserRequestDTO dto) {
         UserResponseDTO created = service.saveUser(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<UserResponseDTO> updateRole(@PathVariable long id, @Valid @RequestBody RoleUpdateDTO dto){
+        return ResponseEntity.ok(service.updateRole(id, dto.getRole()));
     }
 
     @DeleteMapping("/{id}")

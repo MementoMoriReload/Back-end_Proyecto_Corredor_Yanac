@@ -1,8 +1,6 @@
 package com.example.panalsuite.controller;
 
-import com.example.panalsuite.DTO.CommentRequestDTO;
-import com.example.panalsuite.DTO.TicketRequestDTO;
-import com.example.panalsuite.DTO.TicketResponseDTO;
+import com.example.panalsuite.DTO.*;
 import com.example.panalsuite.Service.TicketService;
 import com.example.panalsuite.model.Ticket;
 import jakarta.validation.Valid;
@@ -19,13 +17,14 @@ import java.util.List;
 public class TicketController {
     private final TicketService service;
 
-
     public TicketController(TicketService service) {
+
         this.service = service;
     }
 
     @GetMapping
     public List<TicketResponseDTO> getAllTickets() {
+
         return service.getAllTickets();
     }
 
@@ -48,9 +47,21 @@ public class TicketController {
 
     }
 
+    @PatchMapping("{id}/status")
+    public TicketResponseDTO updateStatus(@PathVariable long id, @Valid @RequestBody StatusUpdateDTO dto){
+        return service.updateStatus(id, dto.getStatus());
+    }
+
+    @PatchMapping("{id}/assign")
+    public TicketResponseDTO assign(@PathVariable long id, @RequestBody AssignRequestDTO dto){
+        return service.assign(id, dto.getAssignedId());
+
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
         service.deleteTicket(id);
         return ResponseEntity.noContent().build();
     }
+
 }

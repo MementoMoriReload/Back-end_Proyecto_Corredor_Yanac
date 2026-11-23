@@ -19,22 +19,48 @@ public class Ticket {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long ticketId;
+
     private String title;
+
     private String description;
+
+    @Enumerated(EnumType.STRING)
     private TicketCategory category;
+
+    @Enumerated(EnumType.STRING)
     private TicketPriority priority;
+
+    @Enumerated(EnumType.STRING)
     private TicketStatus status;
+
     private String location;
-    @ManyToOne
-    @JoinColumn(name="requesterId")
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name="requester_id")
     private User requester;
+
     @ManyToOne
-    @JoinColumn(name="assignedId")
+    @JoinColumn(name="assigned_id")
     private User assigned;
-    @OneToMany
+
+    @OneToMany(mappedBy = "ticket",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
     private List<TicketComment> comments = new ArrayList<>();
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    void onCreate() {
+        createdAt = updatedAt = LocalDateTime.now();
+        if (status == null) status = TicketStatus.OPEN;
+        if (priority == null) priority = TicketPriority.MEDIUM;
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
 }
