@@ -11,4 +11,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: TRUE
+
+springdoc:
+  api-docs:
+    enabled: TRUE
+  swagger-ui:
+    enabled: TRUE
+    path: /doc/swagger-ui.html
