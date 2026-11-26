@@ -28,7 +28,7 @@ public class TicketRequestDTO {
     @Schema (description = "Categoria", example = "INTERNAL_SUPPORT")
     private TicketCategory category;
 
-    @Schema (description = "Prioridad", example = "MEDIUM")
+    @Schema (description = "Prioridad (por defecto MEDIUM)", example = "MEDIUM")
     private TicketPriority priority;
 
     @NotNull(message = "El solicitante es obligatorio")

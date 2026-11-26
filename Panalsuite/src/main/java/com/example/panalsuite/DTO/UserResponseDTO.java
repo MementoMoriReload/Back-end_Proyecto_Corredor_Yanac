@@ -23,6 +23,6 @@ public class UserResponseDTO {
     @Schema (description = "Departamento", example = "Call Center")
     private String department;
 
-    @Schema (description = "Rol", example = "REQUESTER")
+    @Schema (description = "Rol (por defecto REQUESTER)", example = "REQUESTER")
     private UserRole role;
 }

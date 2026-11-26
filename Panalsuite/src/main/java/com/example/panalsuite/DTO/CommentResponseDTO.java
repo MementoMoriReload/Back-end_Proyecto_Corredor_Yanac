@@ -21,6 +21,6 @@ public class CommentResponseDTO {
     @Schema (description = "Contenido del comentario", example = "Faltan enchufes")
     private String text;
 
-    @Schema (description = "Tiempo de publicación")
+    @Schema (description = "Tiempo de publicación (se aplica automaticamente con la hora del sistema)")
     private LocalDateTime timestamp;
 }

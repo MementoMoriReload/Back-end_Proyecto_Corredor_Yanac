@@ -22,9 +22,9 @@ public class UserRequestDTO {
     @Schema (description = "Contraseña", example = "6767")
     private String password;
     
-    @Schema (description = "Departamente", example = "Call Center")
+    @Schema (description = "Departamento", example = "Call Center")
     private String department;
 
-    @Schema (description = "Rol", example = "REQUESTER")
+    @Schema (description = "Rol (por defecto REQUESTER)", example = "REQUESTER")
     private UserRole role;
 }
